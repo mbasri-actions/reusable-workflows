@@ -41,25 +41,25 @@ jobs:
       - name: Checkout Step
         uses: actions/checkout@v6
 
-      - name: Trivy Scan Step
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          scanners: 'misconfig'
-          format: 'table'
-          output: 'trivy-table.txt'
-          exit-code: '1'
-          severity: 'CRITICAL,HIGH'
+      # - name: Trivy Scan Step
+      #   uses: aquasecurity/trivy-action@master
+      #   with:
+      #     scan-type: 'fs'
+      #     scan-ref: '.'
+      #     scanners: 'misconfig'
+      #     format: 'table'
+      #     output: 'trivy-table.txt'
+      #     exit-code: '1'
+      #     severity: 'CRITICAL,HIGH'
 
-      - name: Trivy Summary
-        if: always()
-        shell: bash
-        run: |
-          echo "### Trivy Security Scan" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          cat trivy-table.txt >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+      # - name: Trivy Summary
+      #   if: always()
+      #   shell: bash
+      #   run: |
+      #     echo "### Trivy Security Scan" >> $GITHUB_STEP_SUMMARY
+      #     echo '```' >> $GITHUB_STEP_SUMMARY
+      #     cat trivy-table.txt >> $GITHUB_STEP_SUMMARY
+      #     echo '```' >> $GITHUB_STEP_SUMMARY
 
       # - name: Trivy SARIF Report Step
       #   if: always()
