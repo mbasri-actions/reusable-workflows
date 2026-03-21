@@ -61,22 +61,22 @@ jobs:
           cat trivy-table.txt >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
-      - name: Trivy SARIF Report Step
-        if: always()
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          scanners: 'misconfig'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
+      # - name: Trivy SARIF Report Step
+      #   if: always()
+      #   uses: aquasecurity/trivy-action@master
+      #   with:
+      #     scan-type: 'fs'
+      #     scan-ref: '.'
+      #     scanners: 'misconfig'
+      #     format: 'sarif'
+      #     output: 'trivy-results.sarif'
+      #     severity: 'CRITICAL,HIGH'
 
-      - name: Upload Trivy scan results to GitHub Security tab
-        if: always()
-        uses: github/codeql-action/upload-sarif@v4
-        with:
-          sarif_file: 'trivy-results.sarif'
+      # - name: Upload Trivy scan results to GitHub Security tab
+      #   if: always()
+      #   uses: github/codeql-action/upload-sarif@v4
+      #   with:
+      #     sarif_file: 'trivy-results.sarif'
 
   gitversion:
     name: GitVersion
