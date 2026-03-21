@@ -47,7 +47,8 @@ jobs:
           scan-type: 'fs'
           scan-ref: '.'
           scanners: 'misconfig'
-          format: 'table'
+          format: 'github'
+          output: 'trivy-results.sarif'
           exit-code: '1'
           severity: 'CRITICAL,HIGH'
 
