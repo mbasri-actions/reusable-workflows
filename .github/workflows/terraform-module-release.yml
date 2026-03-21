@@ -1,4 +1,4 @@
-name: Audit and Upgrade Terraform Module
+name: Terraform Module Release
 
 on:
   workflow_call:
