@@ -47,9 +47,29 @@ jobs:
           scan-type: 'fs'
           scan-ref: '.'
           scanners: 'misconfig'
-          format: 'github'
-          output: 'trivy-results.sarif'
+          format: 'table'
+          output: 'trivy-table.txt'
           exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Trivy Summary
+        if: always()
+        shell: bash
+        run: |
+          echo "### Trivy Security Scan" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat trivy-table.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Trivy SARIF Report Step
+        if: always()
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          scanners: 'misconfig'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy scan results to GitHub Security tab
