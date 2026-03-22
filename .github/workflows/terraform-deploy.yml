@@ -1,0 +1,82 @@
+name: Terraform Deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'The target environment'
+        required: true
+        type: string
+      working-directory:
+        description: 'The working directory containing Terraform files'
+        required: true
+        type: string
+
+jobs:
+  plan:
+    name: Plan (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    outputs:
+      plan-hash: ${{ steps.hash.outputs.plan-hash }}
+    env:
+      TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
+    steps:
+      - uses: mbasri-actions/terraform-setup@v1
+        with:
+          working-directory: ${{ inputs.working-directory }}
+          environment: ${{ inputs.environment }}
+
+      - name: Terraform Plan
+        working-directory: ${{ inputs.working-directory }}
+        run: terraform plan -no-color -out=/tmp/tfplan
+        env:
+          TF_WORKSPACE: ${{ inputs.environment }}
+
+      - name: Compute Plan Hash
+        id: hash
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          terraform show -json /tmp/tfplan | jq -cS '.resource_changes' | sha256sum | cut -d ' ' -f1 > /tmp/plan-hash
+          echo "plan-hash=$(cat /tmp/plan-hash)" >> $GITHUB_OUTPUT
+        env:
+          TF_WORKSPACE: ${{ inputs.environment }}
+
+  apply:
+    name: Apply (${{ inputs.environment }})
+    needs: plan
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
+    steps:
+      - uses: mbasri-actions/terraform-setup@v1
+        with:
+          working-directory: ${{ inputs.working-directory }}
+          environment: ${{ inputs.environment }}
+
+      - name: Terraform Plan
+        working-directory: ${{ inputs.working-directory }}
+        run: terraform plan -no-color -out=/tmp/tfplan
+        env:
+          TF_WORKSPACE: ${{ inputs.environment }}
+
+      - name: Verify Plan Hash
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          CURRENT_HASH=$(terraform show -json /tmp/tfplan | jq -cS '.resource_changes' | sha256sum | cut -d ' ' -f1)
+          EXPECTED_HASH="${{ needs.plan.outputs.plan-hash }}"
+          echo "Expected: $EXPECTED_HASH"
+          echo "Current:  $CURRENT_HASH"
+          if [ "$CURRENT_HASH" != "$EXPECTED_HASH" ]; then
+            echo "::error::Plan has changed since approval! Aborting apply."
+            exit 1
+          fi
+          echo "Plan verified — no drift detected."
+        env:
+          TF_WORKSPACE: ${{ inputs.environment }}
+
+      - name: Terraform Apply
+        working-directory: ${{ inputs.working-directory }}
+        run: terraform apply /tmp/tfplan
+        env:
+          TF_WORKSPACE: ${{ inputs.environment }}
