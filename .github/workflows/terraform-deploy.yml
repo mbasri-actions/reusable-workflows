@@ -11,13 +11,6 @@ on:
         description: 'The working directory containing Terraform files'
         required: true
         type: string
-    secrets:
-      GH_APP_ID:
-        required: true
-      GH_APP_PRIVATE_KEY:
-        required: true
-      TF_API_TOKEN:
-        required: true
 
 jobs:
   plan:
