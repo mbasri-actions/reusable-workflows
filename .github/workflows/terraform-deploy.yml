@@ -59,7 +59,7 @@ jobs:
 
       - name: Terraform Plan
         working-directory: ${{ inputs.working-directory }}
-        run: terraform plan -no-color -out=/tmp/tfplan
+        run: terraform plan -no-color -out=/tmp/tfplan 2>&1 | tee /tmp/plan_output.txt
         env:
           TF_WORKSPACE: ${{ inputs.environment }}
 
@@ -71,6 +71,43 @@ jobs:
           echo "plan-hash=$(cat /tmp/plan-hash)" >> $GITHUB_OUTPUT
         env:
           TF_WORKSPACE: ${{ inputs.environment }}
+
+      - name: Generate Plan Summary
+        if: always()
+        shell: bash
+        run: |
+          set +o pipefail
+          if [ -f /tmp/plan_output.txt ]; then
+            CLEAN_OUTPUT=$(cat /tmp/plan_output.txt | sed 's/\x1b\[[0-9;]*m//g')
+            ADD=$(echo "$CLEAN_OUTPUT" | grep -oP '\d+(?= to add)' | tail -1 || echo "0")
+            CHANGE=$(echo "$CLEAN_OUTPUT" | grep -oP '\d+(?= to change)' | tail -1 || echo "0")
+            DESTROY=$(echo "$CLEAN_OUTPUT" | grep -oP '\d+(?= to destroy)' | tail -1 || echo "0")
+            ADD=${ADD:-0}; CHANGE=${CHANGE:-0}; DESTROY=${DESTROY:-0}
+            PLAN_OUTPUT=$(echo "$CLEAN_OUTPUT" | sed -n '/Terraform will perform the following actions:/,$p' | head -c 60000 || true)
+            [ -z "$PLAN_OUTPUT" ] && PLAN_OUTPUT=$(echo "$CLEAN_OUTPUT" | sed -n '/Terraform planned the following actions, but then encountered a problem:/,$p' | head -c 60000 || true)
+            [ -z "$PLAN_OUTPUT" ] && PLAN_OUTPUT="No changes. Your infrastructure matches the configuration."
+          else
+            ADD=0; CHANGE=0; DESTROY=0
+            PLAN_OUTPUT="No plan output available"
+          fi
+
+          {
+            echo "### Terraform Plan - \`${{ inputs.environment }}\`"
+            echo ""
+            echo "<details><summary>Show Plan Output</summary>"
+            echo ""
+            echo '```diff'
+            echo "$PLAN_OUTPUT"
+            echo '```'
+            echo ""
+            echo "</details>"
+            echo ""
+            echo "| Add | Change | Destroy |"
+            echo "|:---:|:------:|:-------:|"
+            echo "| 🟢 **+${ADD}** | 🟡 **~${CHANGE}** | 🔴 **-${DESTROY}** |"
+          } > /tmp/plan_summary.md
+
+          cat /tmp/plan_summary.md >> $GITHUB_STEP_SUMMARY
 
   apply:
     name: Apply (${{ inputs.environment }})
@@ -123,6 +160,31 @@ jobs:
 
       - name: Terraform Apply
         working-directory: ${{ inputs.working-directory }}
-        run: terraform apply /tmp/tfplan
+        run: terraform apply /tmp/tfplan 2>&1 | tee /tmp/apply_output.txt
         env:
           TF_WORKSPACE: ${{ inputs.environment }}
+
+      - name: Apply Summary
+        if: success()
+        shell: bash
+        run: |
+          {
+            echo "### ✅ Terraform Apply - \`${{ inputs.environment }}\`"
+            echo ""
+            echo "Apply completed successfully."
+          } >> $GITHUB_STEP_SUMMARY
+
+  rejected:
+    name: Rejected (${{ inputs.environment }})
+    needs: apply
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply Rejected
+        shell: bash
+        run: |
+          {
+            echo "### ⛔ Terraform Apply Rejected - \`${{ inputs.environment }}\`"
+            echo ""
+            echo "The apply was rejected or failed. Check the workflow logs for details."
+          } >> $GITHUB_STEP_SUMMARY
