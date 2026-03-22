@@ -18,11 +18,19 @@ on:
         required: true
       TF_API_TOKEN:
         required: true
+      AWS_ROLE_ARN:
+        required: true
+
+env:
+  AWS_REGION: eu-west-1
 
 jobs:
   plan:
     name: Plan (${{ inputs.environment }})
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     outputs:
       plan-hash: ${{ steps.hash.outputs.plan-hash }}
     env:
@@ -41,6 +49,12 @@ jobs:
           working-directory: ${{ inputs.working-directory }}
           environment: ${{ inputs.environment }}
           github-token: ${{ steps.app-token.outputs.token }}
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Terraform Plan
         working-directory: ${{ inputs.working-directory }}
@@ -61,6 +75,9 @@ jobs:
     name: Apply (${{ inputs.environment }})
     needs: plan
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     environment: ${{ inputs.environment }}
     env:
       TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
@@ -78,6 +95,12 @@ jobs:
           working-directory: ${{ inputs.working-directory }}
           environment: ${{ inputs.environment }}
           github-token: ${{ steps.app-token.outputs.token }}
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Terraform Plan
         working-directory: ${{ inputs.working-directory }}
