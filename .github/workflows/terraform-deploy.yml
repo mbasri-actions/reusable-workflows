@@ -11,6 +11,11 @@ on:
         description: 'The working directory containing Terraform files'
         required: true
         type: string
+      destroy:
+        description: 'Destroy infrastructure instead of apply'
+        required: false
+        type: boolean
+        default: false
     secrets:
       GH_APP_ID:
         required: true
@@ -59,7 +64,7 @@ jobs:
 
       - name: Terraform Plan
         working-directory: ${{ inputs.working-directory }}
-        run: terraform plan -no-color -out=/tmp/tfplan 2>&1 | tee /tmp/plan_output.txt
+        run: terraform plan -no-color ${{ inputs.destroy && '-destroy' || '' }} -out=/tmp/tfplan 2>&1 | tee /tmp/plan_output.txt
         env:
           TF_WORKSPACE: ${{ inputs.environment }}
 
@@ -92,7 +97,7 @@ jobs:
           fi
 
           {
-            echo "### Terraform Plan - \`${{ inputs.environment }}\`"
+            echo "### Terraform Plan${{ inputs.destroy && ' (DESTROY)' || '' }} - \`${{ inputs.environment }}\`"
             echo ""
             echo "<details><summary>Show Plan Output</summary>"
             echo ""
@@ -139,7 +144,7 @@ jobs:
 
       - name: Terraform Plan
         working-directory: ${{ inputs.working-directory }}
-        run: terraform plan -no-color -out=/tmp/tfplan
+        run: terraform plan -no-color ${{ inputs.destroy && '-destroy' || '' }} -out=/tmp/tfplan
         env:
           TF_WORKSPACE: ${{ inputs.environment }}
 
@@ -169,9 +174,9 @@ jobs:
         shell: bash
         run: |
           {
-            echo "### ✅ Terraform Apply - \`${{ inputs.environment }}\`"
+            echo "### ✅ Terraform ${{ inputs.destroy && 'Destroy' || 'Apply' }} - \`${{ inputs.environment }}\`"
             echo ""
-            echo "Apply completed successfully."
+            echo "${{ inputs.destroy && 'Destroy' || 'Apply' }} completed successfully."
           } >> $GITHUB_STEP_SUMMARY
 
   rejected:
