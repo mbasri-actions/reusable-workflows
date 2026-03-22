@@ -21,6 +21,10 @@ on:
       AWS_ROLE_ARN:
         required: true
 
+permissions:
+  id-token: write
+  contents: read
+
 env:
   AWS_REGION: eu-west-1
 
@@ -28,9 +32,6 @@ jobs:
   plan:
     name: Plan (${{ inputs.environment }})
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
     outputs:
       plan-hash: ${{ steps.hash.outputs.plan-hash }}
     env:
@@ -75,9 +76,6 @@ jobs:
     name: Apply (${{ inputs.environment }})
     needs: plan
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
     environment: ${{ inputs.environment }}
     env:
       TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
