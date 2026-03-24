@@ -4,7 +4,7 @@ Centralized reusable GitHub Actions workflows for the mbasri-actions organizatio
 
 ## Features
 
-- Centralized versioning using [mbasri-actions/gitversion](https://github.com/mbasri-actions/gitversion)
+- Centralized versioning using [mbasri-actions/semver](https://github.com/mbasri-actions/semver)
 - Standardized CI/CD pipelines per technology
 - Easy to integrate with minimal configuration
 - Extensible to support multiple technologies and use cases
@@ -17,14 +17,15 @@ Centralized reusable GitHub Actions workflows for the mbasri-actions organizatio
 
 | Workflow | Description |
 | --- | --- |
-| `terraform-module.yml` | Versioning workflow for Terraform modules |
+| `terraform-module-release.yml` | Versioning workflow for Terraform modules |
+| `terraform-deploy.yml` | Deploy workflow for Terraform projects (plan, approve, apply) |
 
 ## Usage
 
 Here's an example of how to use the Terraform module workflow in your repository:
 
 ```yaml
-name: Tag Version
+name: Release
 
 on:
   workflow_dispatch:
@@ -36,21 +37,11 @@ on:
 permissions:
   contents: write
   models: read
+  security-events: write
 
 jobs:
-  gitversion-and-push:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v6
-      with:
-        fetch-depth: 0
-        fetch-tags: true
-
-    - name: Generate semantic version and tag repository
-      uses: mbasri-actions/gitversion@main
-      id: gitversion
-      with:
-        isTerraformModule: 'true'
+  release:
+    uses: mbasri-actions/reusable-workflows/.github/workflows/terraform-module-release.yml@main
 ```
 
 ## Author

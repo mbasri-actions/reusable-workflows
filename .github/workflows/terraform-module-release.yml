@@ -76,8 +76,8 @@ jobs:
       #   with:
       #     sarif_file: 'trivy-results.sarif'
 
-  gitversion:
-    name: GitVersion
+  semver:
+    name: Semver
     runs-on: ubuntu-latest
     needs: security
     permissions:
@@ -90,7 +90,7 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
-      - name: GitVersion Step
-        uses: mbasri-actions/gitversion@v1
+      - name: Semver Step
+        uses: mbasri-actions/semver@v1
         with:
           isTerraformModule: 'true'
