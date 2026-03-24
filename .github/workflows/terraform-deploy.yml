@@ -169,6 +169,13 @@ jobs:
         env:
           TF_WORKSPACE: ${{ inputs.environment }}
 
+      - name: Terraform Output
+        if: ${{ !inputs.destroy }}
+        working-directory: ${{ inputs.working-directory }}
+        run: terraform output -no-color > /tmp/output.txt 2>&1 || true
+        env:
+          TF_WORKSPACE: ${{ inputs.environment }}
+
       - name: Apply Summary
         if: success()
         shell: bash
@@ -178,6 +185,20 @@ jobs:
             echo ""
             echo "${{ inputs.destroy && 'Destroy' || 'Apply' }} completed successfully."
           } >> $GITHUB_STEP_SUMMARY
+
+          if [ -f /tmp/output.txt ] && [ -s /tmp/output.txt ]; then
+            OUTPUT_CONTENT=$(cat /tmp/output.txt | head -c 60000)
+            {
+              echo ""
+              echo "<details><summary>Show Outputs</summary>"
+              echo ""
+              echo '```'
+              echo "$OUTPUT_CONTENT"
+              echo '```'
+              echo ""
+              echo "</details>"
+            } >> $GITHUB_STEP_SUMMARY
+          fi
 
   rejected:
     name: Rejected (${{ inputs.environment }})
